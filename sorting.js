@@ -11,7 +11,9 @@ var unlocks = [
 	{
 		name : "money",
 		req : 1,
+		active: false,
 		effect : function(){
+			this.active = true;
 			this.rewardElement = document.createElement("p");
 			this.rewardElement.innerHTML = "Reward: " + money;
 			document.getElementById("mainGame").appendChild(this.rewardElement);
@@ -22,6 +24,7 @@ var unlocks = [
 	},
 	{name : "somtin",
 		req : 99999,
+		active: false,
 		effect : function(){
 			this.rewardElement = document.createElement("p");
 			this.rewardElement.innerHTML = "Reward: " + money;
@@ -72,7 +75,7 @@ function swap(array, a, b){
 
 function checkUnlock(){
 	for(var a = 0; a < unlocks.length; a++){
-		if(manualSorts >= unlocks[a].req){
+		if(!unlocks[a].active && manualSorts >= unlocks[a].req){
 			unlocks[a].effect();
 		}
 	}
@@ -111,6 +114,7 @@ function update(){
 	if(checkIfSorted(playerArray))	{
 		manualSorts++;
 		money += 1;
+		if(unlocks[0].active) unlocks[0].update();
 		shuffle(playerArray);
 		checkUnlock();
 	}
