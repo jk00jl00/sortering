@@ -1,16 +1,37 @@
 
 var playerArray = [],
-	playerArraySize = 10,
+	playerArraySize = 5,
 	keyPresses = [],
 	highlight = 5,
 	selected = -1,
 	money = 0,
 	manualSorts = 0;
 
+var shopItems = [
+	{
+		name : "More elements!",
+		cost : 10,
+		req : 8,
+		bought : false,
+		active : false,
+		element : null,
+		effect : function(){
+			if(money >= this.cost){
+				this.bought = true;
+				money -= this.cost;
+				playerArraySize = 10;
+				document.getElementById("shopDiv").removeChild(this.element);
+				init();
+			}
+		} 
+	}
+];
+
 var unlocks = [
 	{
 		name : "money",
 		req : 1,
+		prevMoney: 0,
 		active: false,
 		effect : function(){
 			this.active = true;
@@ -18,25 +39,51 @@ var unlocks = [
 			this.rewardElement.innerHTML = "Reward: " + money;
 			document.getElementById("mainGame").appendChild(this.rewardElement);
 			this.update = function(){
-				this.rewardElement.innerHTML = "Reward: " + money;
+				if(this.prevMoney != money){
+					this.prevMoney = money; 
+					this.rewardElement.innerHTML = "Reward: " + money;
+				}
 			}
 		}
 	},
-	{name : "somtin",
-		req : 99999,
+	{name : "Shop",
+		req : 5,
 		active: false,
+		activeItems : [], 
+		boughtItems : [],
+
 		effect : function(){
-			this.rewardElement = document.createElement("p");
-			this.rewardElement.innerHTML = "Reward: " + money;
+			this.active = true;
+			this.rewardElement = document.createElement("div");
+			this.rewardElement.innerHTML = "Shop";
+			this.rewardElement.id = "shopDiv";
 			document.getElementById("mainGame").appendChild(this.rewardElement);
 			this.update = function(){
-				this.rewardElement.innerHTML = "Reward: " + money;
+				for(var i = 0; i < shopItems.length; i++){
+					if(!shopItems[i].bought && !shopItems[i].active && money >= shopItems[i].req){
+						this.activeItems.push(shopItems[i]);
+						this.tempElement = document.createElement("p");
+						this.tempElement.innerHTML = shopItems[i].name + " " + shopItems[i].cost + ":-";
+						this.tempElement.onclick = function (object){
+							return function(){
+								object.effect();
+							}
+						}(shopItems[i]);
+						document.getElementById("shopDiv").appendChild(this.tempElement);
+						shopItems[i].active = true;
+						shopItems[i].bought = true;
+						shopItems[i].element = this.tempElement;
+					}
+				}
 			}
-		}},
-	];
+		}
+	},
+];
 
 var canvas = document.getElementById("canvas"),
-	ctx = canvas.getContext("2d");
+	ctx = canvas.getContext("2d"),
+	height = canvas.height,
+	width = canvas.width;
 
 function shuffle(array) {
   var cIndex = array.length, tempValue, rndIndex;
@@ -56,11 +103,13 @@ function shuffle(array) {
 
 function init(){
 	var i = playerArraySize;
+	playerArray = [];
 
 	while(i--){
 		playerArray.push(i);
 	}
 	playerArray = shuffle(playerArray);
+	highlight = random(1, playerArray.length);
 }
 
 function select(){
@@ -81,17 +130,32 @@ function checkUnlock(){
 	}
 }
 
-function checkIfSorted(array){
+function checkIfSorted(array, bothWays){
 	var i = 1,
 		cur,
 		last = array[0];
 	while(i < array.length){
 		cur = array[i];
-		if(cur > last) return false;
+		if(cur > last){
+			last = array[0];
+			i = 0;
+			if(bothWays){
+				while(i < array.length){
+					cur = array[i];
+					if(cur < last) return false;
+					last = cur;
+					i++;
+				}
+			} else return false;
+		}
 		last = cur;
 		i++
 	}
 	return true;
+}
+
+function random(min, max){
+	return Math.floor(min + Math.random() * (max-min));
 }
 
 
@@ -111,29 +175,35 @@ function update(){
 		}
 		keyPresses[32] = false;
 	}
-	if(checkIfSorted(playerArray))	{
+	if(checkIfSorted(playerArray, true))	{
 		manualSorts++;
 		money += 1;
-		if(unlocks[0].active) unlocks[0].update();
 		shuffle(playerArray);
 		checkUnlock();
 	}
+
+	for(var i = 0; i < unlocks.length; i++){
+		if(unlocks[i].update){
+			unlocks[i].update();
+		}
+	}
+
 }
 
 
 function draw(){
 	ctx.fillStyle = '#EABA6B';
-	ctx.fillRect(0, 0, 500, 500);
+	ctx.fillRect(0, 0, width, height);
 	drawPlayerArray();
+	ctx.fillStyle = "black";
 }
 
 function drawPlayerArray(){
 	for(i = 0; i < playerArray.length; i++){
 		ctx.fillStyle = 'black';
-		if(i == highlight){
-			ctx.fillStyle = 'blue';
-		}
-		ctx.fillRect(i * (500 / playerArray.length), 500 - (playerArray[i] + 1) * (500 / playerArray.length), 500 / playerArray.length, (playerArray[i] + 1) * (500 / playerArray.length));
+		if(i == highlight) ctx.fillStyle = 'blue';
+		else if(i == selected) ctx.fillStyle = 'red';
+		ctx.fillRect(i * (width / playerArray.length), height - (playerArray[i] + 1) * (height / playerArray.length), width / playerArray.length, (playerArray[i] + 1) * (height / playerArray.length));
 		
 	}
 }
