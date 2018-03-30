@@ -45,7 +45,7 @@ var minutes = 0,
 var shopItems = [
 	{
 		name : "More elements!",
-		cost : 10,
+		cost : 50,
 		moneyReq : 9,
 		amountBought : 0,
 		bought : false,
@@ -68,13 +68,13 @@ var shopItems = [
 	},
 	{
 		name : "timer",
-		cost : 20,
+		cost : 10,
 		bought : false,
 		active : false,
 		element : null,
 		time: {lastCheck: 0, h: 14, m: 37, d: 25, totalTime: "a", totalMinutes: 0},
 		req : function() {
-			return 15 < money;
+			return 5 < money;
 		},
 		effect : function(){
 			if(money >= this.cost){
@@ -157,7 +157,7 @@ var shopItems = [
 	},
 	{
 		name : "Array Queue",
-		cost : 50,
+		cost : 5,
 		bought : false,
 		active : false,
 		element : null,
@@ -166,7 +166,7 @@ var shopItems = [
 		arrays: [],
 		arraysInQueue: [],
 		req : function() {
-			return shopItems[SHOPINDEX.TIMER].bought && money >= 25;
+			return shopItems[SHOPINDEX.TIMER].bought && money >= 1;
 		},
 		effect : function (){
 			if(this.cost <= money){
