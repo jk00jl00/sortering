@@ -3,48 +3,78 @@
 
 var playerArray = {},
 	playerArraySize = 5,
+	baseSize = 5,
+	minimumLength = 5,
 	keyPresses = [],
 	highlight = 5,
 	selected = -1,
-	money = 100,
+	money = 0,
 	manualSorts = 0;
 
 const DIR = {FALLING: true, RISING: false},
-	SHOPINDEX = {ELEMENTS: 0, TIMER: 1, CSS: 2, BUILDING: 3, QUEUE: 4};
+	SHOPINDEX = {ELEMENTS: 0, TIMER: 1, CSS: 2, BUILDING: 3, QUEUE: 4, HINDECATOR: 5};
 
 
 
 var minutes = 0,
 	seconds = 0;
 
+
+/*{
+	name: ,
+	cost: ,
+	bought: ,
+	active: ,
+	element: ,
+	req: function(){
+		return true;
+	},
+	effect : function(){
+		if(money >= this.cost){
+			money -= this.cost;
+			this.bought = true;
+			this.active = false;
+			
+			document.getElementById("upgradeDiv").removeChild(this.element);
+		}
+	}
+}*/
+
+
+
 var shopItems = [
 	{
 		name : "More elements!",
 		cost : 10,
+		moneyReq : 9,
+		amountBought : 0,
 		bought : false,
 		active : false,
 		element : null,
 		req : function(){
-			return 8 <= money;
+			return this.moneyReq <= money;
 		},
 		effect : function(){
 			if(money >= this.cost){
-				this.bought = true;
  				money -= this.cost;
-				playerArraySize = 10;
+				this.cost += 10;
+				this.active = false;
+				this.moneyReq = this.cost - this.cost/4;
+				playerArraySize = baseSize * Math.E **(0.35 * this.amountBought);
+				this.amountBought ++;
 				document.getElementById("upgradeDiv").removeChild(this.element);
 			}
 		}
 	},
 	{
 		name : "timer",
-		cost : 0,
+		cost : 20,
 		bought : false,
 		active : false,
 		element : null,
 		time: {lastCheck: 0, h: 14, m: 37, d: 25, totalTime: "a", totalMinutes: 0},
 		req : function() {
-			return 10 < money;
+			return 15 < money;
 		},
 		effect : function(){
 			if(money >= this.cost){
@@ -62,13 +92,13 @@ var shopItems = [
 	},
 	{
 		name : "css",
-		cost : 0,
+		cost : 100,
 		bought : false,
 		active : false,
 		element : null,
 		styles : null,
 		req : function() {
-			return shopItems[SHOPINDEX.TIMER].bought && 20 < money;
+			return shopItems[SHOPINDEX.TIMER].bought && 50 < money;
 		},
 		effect : function (){
 			if(this.cost <= money){
@@ -102,7 +132,7 @@ var shopItems = [
 		}
 	},
 	{
-		name : "buildings",
+		name : "WIP",
 		cost : 0,
 		active : false,
 		bought : false,
@@ -118,7 +148,7 @@ var shopItems = [
 				money -= this.cost;
 				document.getElementById("upgradeDiv").removeChild(this.element);
 
-				document.getElementById("buildingTitle").innerHTML = "Where buildings go";
+				document.getElementById("buildingTitle").innerHTML = "WIP";
 
 
 			}
@@ -126,8 +156,8 @@ var shopItems = [
 
 	},
 	{
-		name : "queue",
-		cost : 0,
+		name : "Array Queue",
+		cost : 50,
 		bought : false,
 		active : false,
 		element : null,
@@ -136,7 +166,7 @@ var shopItems = [
 		arrays: [],
 		arraysInQueue: [],
 		req : function() {
-			return shopItems[SHOPINDEX.TIMER].bought;
+			return shopItems[SHOPINDEX.TIMER].bought && money >= 25;
 		},
 		effect : function (){
 			if(this.cost <= money){
@@ -191,7 +221,7 @@ var shopItems = [
 								let h = 0,
 									d = 0,
 									m = 0,
-		 							rndMod = random(this.name + 10, this.name + 10 + this.array.length);
+		 							rndMod = random(this.name + 10 + this.array.length/2, this.name + 20 + this.array.length * 2);
 			 					h = (shopItems[SHOPINDEX.TIMER].time.m + shopItems[SHOPINDEX.TIMER].time.h * 60 + shopItems[SHOPINDEX.TIMER].time.d * 60 * 24 ) + rndMod;
 		 						this.totalMinutes = shopItems[SHOPINDEX.TIMER].time.totalMinutes + rndMod;
 
@@ -240,7 +270,50 @@ var shopItems = [
 			document.getElementById("queue").appendChild(tempElem);
 		}
 
+	},
+	{
+		name : "Height Indicator",
+		cost : 200,
+		active : false,
+		bought : false,
+		element : null,
+		req : function(){
+			return 150 < money;
+		},
+		effect : function (){
+			if(this.cost <= money){
+				this.bought = true;
+				money -= this.cost;
+				document.getElementById("upgradeDiv").removeChild(this.element);
+
+			}
+		}
+
+	},
+	{
+		name: "Array Colours",
+		cost: 20,
+		bought: false,
+		active: false,
+		element: null,
+		req: function(){
+			return money >= 15;
+		},
+		effect : function(){
+			if(money >= this.cost){
+				money -= this.cost;
+				this.bought = true;
+				this.active = false;
+
+				selectedColour = 'red';
+				highlightColour = 'blue';
+
+				
+				document.getElementById("upgradeDiv").removeChild(this.element);
+			}
+		}
 	}
+
 ];
 
 
@@ -406,6 +479,9 @@ var canvas = document.getElementById("canvas"),
 	ctx = canvas.getContext("2d"),
 	height = canvas.height,
 	width = canvas.width;
+	foregroundColour = 'black';
+	highlightColour = 'white';
+	selectedColour = 'black';
 
 var timer = '<div id=\'timer\'> timer </div>';
 
@@ -427,7 +503,7 @@ function shuffle(array) {
 
 function initArray(length){
 	var a = [];
-	for(let i = 0; i < random(5, length + 1); i++){
+	for(let i = 0; i < random(minimumLength, length + 1); i++){
 		a.push(i);
 	}
 	shuffle(a);
@@ -435,8 +511,13 @@ function initArray(length){
 }
 
 function selectArray(arrayObj){
+	for(let i = 0; i < shopItems[SHOPINDEX.QUEUE].arraysInQueue; i++){
+		shopItems[SHOPINDEX.QUEUE].arraysInQueue[i].element.classList.remove("selectedArray");
+	}
 	if(playerArray && playerArray.element) playerArray.element.classList.remove("selectedArray");
 	this.playerArray = arrayObj;
+	highlight = Math.floor(arrayObj.array.length/2);
+
 	if(arrayObj.element){
 		arrayObj.element.classList.add("selectedArray");
 		document.getElementById("selectArrayText").style.display = "none";
@@ -558,6 +639,9 @@ function update(){
 			for(let i = 0; i < shopItems[SHOPINDEX.QUEUE].arraysInQueue.length; i++){
 				if(keyPresses[49 + i] && shopItems[SHOPINDEX.QUEUE].arraysInQueue[i]){ 
 					if(keyPresses[17]){
+						for(let a = 0; a < shopItems[SHOPINDEX.QUEUE].arraysInQueue.length; a++){
+							if(shopItems[SHOPINDEX.QUEUE].arraysInQueue[a])shopItems[SHOPINDEX.QUEUE].arraysInQueue[a].element.classList.remove("selectedArray");
+						}
 						shopItems[SHOPINDEX.QUEUE].arraysInQueue[i].totalMinutes = 0;
 						shopItems[SHOPINDEX.QUEUE].arraysInQueue[i].sorted();
 						keyPresses[49 + i] = false;
@@ -572,20 +656,20 @@ function update(){
 
 		if(keyPresses[37]){
 			if(keyPresses[16]){
-				if(highlight < 10){
+				if(highlight < 5){
 					highlight = 0;
 				} else{
-					highlight -= 10;
+					highlight -= 5;
 				}
 			}
 			if(highlight != 0)highlight--;
 			keyPresses[37] = false;
 		} else if(keyPresses[39]){
 			if(keyPresses[16]){
-				if(highlight > playerArray.array.length - 11){
+				if(highlight > playerArray.array.length - 6){
 					highlight = playerArray.array.length - 1;
 				} else{
-					highlight += 10;
+					highlight += 5;
 				}
 			}
 			if(highlight != playerArray.array.length-1) highlight++;
@@ -626,6 +710,26 @@ function update(){
 		}
 	} else{
 
+		if(shopItems[SHOPINDEX.QUEUE].bought){
+			for(let i = 0; i < shopItems[SHOPINDEX.QUEUE].arraysInQueue.length; i++){
+				if(keyPresses[49 + i] && shopItems[SHOPINDEX.QUEUE].arraysInQueue[i]){ 
+					if(keyPresses[17]){
+						for(let a = 0; a < shopItems[SHOPINDEX.QUEUE].arraysInQueue.length; a++){
+							if(shopItems[SHOPINDEX.QUEUE].arraysInQueue[a])shopItems[SHOPINDEX.QUEUE].arraysInQueue[a].element.classList.remove("selectedArray");
+						}
+						shopItems[SHOPINDEX.QUEUE].arraysInQueue[i].totalMinutes = 0;
+						shopItems[SHOPINDEX.QUEUE].arraysInQueue[i].sorted();
+						keyPresses[49 + i] = false;
+						return;
+					} else{
+						selectArray(shopItems[SHOPINDEX.QUEUE].arraysInQueue[i]);
+					}
+					keyPresses[49 + i] = false;
+				}
+			}
+		}
+
+
 		if(shopItems[4].bought){
 			for(let i = 0; i < shopItems[4].arraysInQueue.length; i++){
 				if(keyPresses[49 + i]) selectArray(shopItems[4].arraysInQueue[i]);
@@ -648,21 +752,27 @@ function update(){
 
 
 function draw(){
-	ctx.fillStyle = '#EABA6B';
 	ctx.clearRect(0, 0, width, height);
 	drawPlayerArray();
-	ctx.fillStyle = "black";
+	ctx.fillStyle = foregroundColour;
 }
 
 function drawPlayerArray(){
 	if(playerArray){
 		for(i = 0; i < playerArray.array.length; i++){
-			ctx.fillStyle = 'black';
-			if(i == highlight) ctx.fillStyle = 'blue';
-			else if(i == selected) ctx.fillStyle = 'red';
+			ctx.fillStyle = foregroundColour;
+			if(i == highlight) ctx.fillStyle = highlightColour;
+			else if(i == selected){ 
+				ctx.fillStyle = selectedColour;
+				if(shopItems[SHOPINDEX.HINDECATOR].bought) 
+					ctx.fillRect(0, height - (playerArray.array[i] + 1) * (height / playerArray.array.length), width, 1);	
+			}
 			ctx.fillRect(i * (width / playerArray.array.length), 
 				height - (playerArray.array[i] + 1) * (height / playerArray.array.length), width / playerArray.array.length, 
-				(playerArray.array[i] + 1) * (height / playerArray.array.length));		
+				(playerArray.array[i] + 1) * (height / playerArray.array.length));
+			if(shopItems[SHOPINDEX.HINDECATOR].bought && i == highlight){
+				ctx.fillRect(0, height - (playerArray.array[i] + 1) * (height / playerArray.array.length), width, 1);	
+			}
 		}
 	} else {
 		document.getElementById("selectArrayText").style.display = "block";
