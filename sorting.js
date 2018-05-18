@@ -237,9 +237,9 @@ var shopItems = [
 								this.time = [h, m, d];
 							},
 							getRandomName: function(){
-							    let u = unsortedness(this.array);
+							    let u = unsortedness(this);
 
-								this.name = random(1, 1 + u);
+								this.name = random(u/2, u + 1);
 							},
 						});
 						this.arrays[this.arrays.length - 1].getRandomName();
@@ -317,13 +317,23 @@ var shopItems = [
 ];
 
 
-function unsortedness(array){
+function unsortedness(arrayObj){
 	var index = 0;
-	for(let i = 0; i < array.length; i++){
-		if(i < array[i]){
-			index += array[i] - i;
-		} else {
-			index += i - array[i];
+	if(arrayObj.dir){
+		for(let i = 0; i < arrayObj.array.length; i++){
+			if((arrayObj.array.length - 1 - i) < arrayObj.array[i]){
+				index += arrayObj.array[i] - arrayObj.array.length - 1 - i;
+			} else {
+				index += ((arrayObj.array.length - 1 - i) - arrayObj.array[i]);
+			}
+		}
+	} else{
+		for(let i = 0; i < arrayObj.array.length; i++){
+			if(i < arrayObj.array[i]){
+				index += arrayObj.array[i] - i;
+			} else {
+				index += i - arrayObj.array[i];
+			}
 		}
 	}
 	return index;
@@ -342,9 +352,10 @@ function getTime(lastTime){
 	now = timestamp();
 	lastTime.currentTime = now;
 	dt = lastTime.currentTime - lastTime.lastCheck;
-	if(dt > 1250){
+	while(dt > 1250){
 		lastTime.totalMinutes++;
-		lastTime.lastCheck = lastTime.currentTime;
+		lastTime.lastCheck += 1250;
+		dt -= 1250;
 		if(lastTime.m == 59){
 			lastTime.m = 0;
 			if(lastTime.h == 23){
@@ -387,22 +398,6 @@ function getTime(lastTime){
 	return lastTime;
 }
 
-/*for(let a = 4; a < 31; a++){
-	shopItems.push({
-		name: "TestItem " + (a - 3),
-		cost: 0,
-		req: 0,
-		bought: false,
-		active: false,
-		element: null,
-		effect: function() {
-			if(this.cost <= money){
-				this.bought = true;
-				money -= this.cost;
-				document.getElementById("upgradeDiv").removeChild(this.element);
-			}
-		}});
-}*/
 
 var unlocks = [
 	{
@@ -799,6 +794,7 @@ window.addEventListener("keyup", function(event){
 	if(event.keyCode == 16 || event.keyCode == 17)	keyPresses[event.keyCode] = false;
 });
 
+shopItems[SHOPINDEX.TIMER].time.lastCheck = timestamp();
 init();
 checkUnlock();
 window.requestAnimationFrame(frame);
